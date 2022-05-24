@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, ContractTransaction } from "ethers";
-import { ethers, network, deployments } from "hardhat";
+import { ethers, network } from "hardhat";
 import {
   DAO__factory,
   DAO,
@@ -21,6 +21,11 @@ import {
   TokenFactory,
   VotesTokenWithSupply,
   VotesTokenWithSupply__factory,
+  MetaFactory__factory,
+  DAOFactory__factory,
+  TreasuryModuleFactory__factory,
+  TokenFactory__factory,
+  GovernorFactory__factory,
 } from "../typechain-types";
 import getInterfaceSelector from "./helpers/getInterfaceSelector";
 import {
@@ -74,24 +79,23 @@ describe("MetaFactory", () => {
     [deployer, upgrader, executor, withdrawer, userA, userB] =
       await ethers.getSigners();
 
-    // Run deploy scripts
-    await deployments.fixture();
-
     // Get deployed MetaFactory contract
-    metaFactory = await ethers.getContract("MetaFactory");
+    metaFactory = await new MetaFactory__factory(deployer).deploy();
 
     // Get deployed factory contracts
-    daoFactory = await ethers.getContract("DAOFactory");
-    treasuryFactory = await ethers.getContract("TreasuryModuleFactory");
-    tokenFactory = await ethers.getContract("TokenFactory");
-    govFactory = await ethers.getContract("GovernorFactory");
+    daoFactory = await new DAOFactory__factory(deployer).deploy();
+    treasuryFactory = await new TreasuryModuleFactory__factory(
+      deployer
+    ).deploy();
+    tokenFactory = await new TokenFactory__factory(deployer).deploy();
+    govFactory = await new GovernorFactory__factory(deployer).deploy();
 
     // Get deployed implementation contracts
-    daoImpl = await ethers.getContract("DAO");
-    accessControlImpl = await ethers.getContract("AccessControlDAO");
-    treasuryImpl = await ethers.getContract("TreasuryModule");
-    govImpl = await ethers.getContract("GovernorModule");
-    timelockImpl = await ethers.getContract("TimelockUpgradeable");
+    daoImpl = await new DAO__factory(deployer).deploy();
+    accessControlImpl = await new AccessControlDAO__factory(deployer).deploy();
+    treasuryImpl = await new TreasuryModule__factory(deployer).deploy();
+    govImpl = await new GovernorModule__factory(deployer).deploy();
+    timelockImpl = await new TimelockUpgradeable__factory(deployer).deploy();
 
     const abiCoder = new ethers.utils.AbiCoder();
 
