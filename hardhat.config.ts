@@ -7,6 +7,7 @@ import "hardhat-deploy";
 import "@typechain/hardhat";
 import "hardhat-tracer";
 import "solidity-coverage";
+import "hardhat-dependency-compiler";
 
 dotenv.config();
 
@@ -32,6 +33,13 @@ const config: HardhatUserConfig = {
         runs: 200,
       },
     },
+  },
+  dependencyCompiler: {
+    paths: [
+      "@fractal-framework/fractal-framework/contracts/DAO.sol",
+      "@fractal-framework/fractal-framework/contracts/AccessControlDAO.sol",
+      "@fractal-framework/fractal-framework/contracts/DAOFactory.sol",
+    ],
   },
   namedAccounts: {
     deployer: {
