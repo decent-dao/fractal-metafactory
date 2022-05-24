@@ -1,7 +1,6 @@
 {
   "name": "@fractal-framework/fractal-metafactory",
   "version": "0.0.1",
-  "main": "index.js",
   "files": [
     "contracts",
     "typechain-types"
