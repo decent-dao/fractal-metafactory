@@ -8,8 +8,8 @@ import "@openzeppelin/contracts-upgradeable/governance/utils/IVotesUpgradeable.s
 import "@openzeppelin/contracts/utils/Address.sol";
 
 import "./interfaces/IMetaFactory.sol";
-import "@fractal-framework/fractal-framework/contracts/interfaces/IDAO.sol";
-import "@fractal-framework/fractal-framework/contracts/interfaces/IAccessControlDAO.sol";
+import "@fractal-framework/core-contracts/contracts/interfaces/IDAO.sol";
+import "@fractal-framework/core-contracts/contracts/interfaces/IAccessControlDAO.sol";
 
 /// @notice A factory contract for deploying DAOs along with any desired modules within one transaction
 contract MetaFactory is IMetaFactory, ERC165 {
