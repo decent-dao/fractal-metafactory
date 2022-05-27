@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "@fractal-framework/fractal-framework/contracts/interfaces/IDAOFactory.sol";
+import "@fractal-framework/core-contracts/contracts/interfaces/IDAOFactory.sol";
 
 interface IMetaFactory {
     event DAOAndModulesCreated(

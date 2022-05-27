@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorSettingsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorCountingSimpleUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorVotesQuorumFractionUpgradeable.sol";
-import "@fractal-framework/fractal-framework/contracts/ModuleBase.sol";
+import "@fractal-framework/core-contracts/contracts/ModuleBase.sol";
 import "./IGovernorModule.sol";
 
 /// @dev Governor Module used to implement 1 token 1 vote.
@@ -50,7 +50,7 @@ contract GovernorModule is
         __GovernorVotes_init(_token);
         __GovernorVotesQuorumFraction_init(_initialQuorumNumeratorValue);
         __GovTimelock_init(_timelock);
-        __initBase(_accessControl, msg.sender);
+        __initBase(_accessControl, msg.sender, "Governor Module");
     }
 
     // The following functions are overrides required by Solidity.
@@ -228,6 +228,12 @@ contract GovernorModule is
         returns (address)
     {
         return super._executor();
+    }
+
+    /// @notice Returns the module name
+    /// @return The module name
+    function name() public view override(ModuleBase, GovernorUpgradeable, IGovernorUpgradeable) returns (string memory) {
+      return _name;
     }
 
     /// @dev See {IERC165-supportsInterface}.
