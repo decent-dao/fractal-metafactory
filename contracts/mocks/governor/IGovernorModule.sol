@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorVotesUpgradeable.sol";
-import "./GovTimelockUpgradeable.sol";
+import "../Governor/GovTimelockUpgradeable.sol";
 
 /// @dev Governor Module used to implement 1 token 1 vote.
 /// This acts as an extension of the MVD and permissions are controlled by access control.
@@ -9,7 +9,6 @@ import "./GovTimelockUpgradeable.sol";
 interface IGovernorModule {
     /// @dev Configures Gov Module implementation
     /// @dev Called once during deployment atomically
-    /// @param _name Name of the DAO
     /// @param _token Voting token uses snapshot feature
     /// @param _timelock Timelock vest proposals to allow detractors to exit system
     /// @param _initialVoteExtension Allow users to vote if quorum attack is preformed
@@ -18,10 +17,7 @@ interface IGovernorModule {
     /// @param _initialProposalThreshold Total tokens required to submit a proposal
     /// @param _initialQuorumNumeratorValue Total votes needed to reach quorum
     /// @param _accessControl Address of Access Control
-
-
     function initialize(
-        string memory _name,
         IVotesUpgradeable _token,
         ITimelockUpgradeable _timelock,
         uint64 _initialVoteExtension,

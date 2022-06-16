@@ -4,6 +4,7 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorSettingsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorCountingSimpleUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorVotesQuorumFractionUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorPreventLateQuorumUpgradeable.sol";
 import "@fractal-framework/core-contracts/contracts/ModuleBase.sol";
 import "./IGovernorModule.sol";
 
@@ -16,11 +17,11 @@ contract GovernorModule is
     GovernorVotesUpgradeable,
     GovernorVotesQuorumFractionUpgradeable,
     GovTimelockUpgradeable,
-    ModuleBase
+    ModuleBase,
+    GovernorPreventLateQuorumUpgradeable
 {
     /// @dev Configures Gov Module implementation
     /// @dev Called once during deployment atomically
-    /// @param _name Name of the DAO
     /// @param _token Voting token uses snapshot feature
     /// @param _timelock Timelock vest proposals to allow detractors to exit system
     /// @param _initialVoteExtension Allow users to vote if quorum attack is preformed
@@ -30,7 +31,6 @@ contract GovernorModule is
     /// @param _initialQuorumNumeratorValue Total votes needed to reach quorum
     /// @param _accessControl Address of Access Control
     function initialize(
-        string memory _name,
         IVotesUpgradeable _token,
         ITimelockUpgradeable _timelock,
         uint64 _initialVoteExtension,
@@ -40,7 +40,7 @@ contract GovernorModule is
         uint256 _initialQuorumNumeratorValue,
         address _accessControl
     ) external initializer {
-        __Governor_init(_name);
+        __Governor_init("Governor Module");
         __GovernorSettings_init(
             _initialVotingDelay,
             _initialVotingPeriod,
@@ -51,6 +51,7 @@ contract GovernorModule is
         __GovernorVotesQuorumFraction_init(_initialQuorumNumeratorValue);
         __GovTimelock_init(_timelock);
         __initBase(_accessControl, msg.sender, "Governor Module");
+        __GovernorPreventLateQuorum_init(_initialVoteExtension);
     }
 
     // The following functions are overrides required by Solidity.
@@ -103,7 +104,7 @@ contract GovernorModule is
     function getVotes(address account, uint256 blockNumber)
         public
         view
-        override(IGovernorUpgradeable, GovernorUpgradeable)
+        override(IGovernorUpgradeable, GovernorVotesUpgradeable)
         returns (uint256)
     {
         return super.getVotes(account, blockNumber);
@@ -129,6 +130,7 @@ contract GovernorModule is
         view
         virtual
         override(
+            GovernorPreventLateQuorumUpgradeable,
             GovernorUpgradeable,
             IGovernorUpgradeable
         )
@@ -149,7 +151,7 @@ contract GovernorModule is
     )
         internal
         virtual
-        override(GovernorUpgradeable)
+        override(GovernorUpgradeable, GovernorPreventLateQuorumUpgradeable)
         returns (uint256)
     {
         return super._castVote(proposalId, account, support, reason);
