@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 
 import "./interfaces/IMetaFactory.sol";
 import "@fractal-framework/core-contracts/contracts/interfaces/IDAO.sol";
-import "@fractal-framework/core-contracts/contracts/interfaces/IAccessControlDAO.sol";
+import "@fractal-framework/core-contracts/contracts/interfaces/IDAOAccessControl.sol";
 
 // Give the metafactory a temporary execute role (this is done in the DAO / access control creation)
 // Create the DAO and access control contracts
