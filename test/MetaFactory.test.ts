@@ -181,12 +181,7 @@ describe("MetaFactory", () => {
           VotesTokenWithSupply__factory.bytecode,
           abiCoder.encode(
             ["string", "string", "address[]", "uint256[]"],
-            [
-              "DCNT",
-              "DCNT",
-              [predictedTreasuryAddress, predictedDAOAddress],
-              [1000, 1000],
-            ]
+            ["DCNT", "DCNT", [predictedTreasuryAddress], [1000]]
           ),
         ]
       )
@@ -220,9 +215,9 @@ describe("MetaFactory", () => {
       ],
       rolesAdmins: ["DAO_ROLE", "DAO_ROLE", "DAO_ROLE", "DAO_ROLE"],
       members: [
-        [executor.address, metaFactory.address],
-        [upgrader.address],
-        [withdrawer.address, dao.address],
+        [metaFactory.address, executor.address],
+        [dao.address, upgrader.address],
+        [dao.address, withdrawer.address],
         [],
       ],
       daoFunctionDescs: [
@@ -247,8 +242,8 @@ describe("MetaFactory", () => {
     const tokenFactoryData = [
       abiCoder.encode(["string"], ["DCNT"]),
       abiCoder.encode(["string"], ["DCNT"]),
-      abiCoder.encode(["address[]"], [[treasuryModule.address, dao.address]]),
-      abiCoder.encode(["uint256[]"], [[1000, 1000]]),
+      abiCoder.encode(["address[]"], [[treasuryModule.address]]),
+      abiCoder.encode(["uint256[]"], [[1000]]),
       abiCoder.encode(
         ["bytes32"],
         [ethers.utils.formatBytes32String("tokenSalt")]
@@ -299,7 +294,6 @@ describe("MetaFactory", () => {
         metaFactory.address,
       ]);
 
-    await network.provider.send("evm_mine");
     tx = await metaFactory.createDAOAndExecute(
       daoFactory.address,
       createDAOParams,
@@ -639,309 +633,309 @@ describe("MetaFactory", () => {
   //   ).to.eq(false);
   // });
 
-  // it("Sets up the correct DAO action authorization", async () => {
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       executor.address,
-  //       dao.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["execute(address[],uint256[],bytes[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+  it("Sets up the correct DAO action authorization", async () => {
+    expect(
+      await accessControl.actionIsAuthorized(
+        executor.address,
+        dao.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["execute(address[],uint256[],bytes[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       timelock.address,
-  //       dao.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["execute(address[],uint256[],bytes[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    // expect(
+    //   await accessControl.actionIsAuthorized(
+    //     timelock.address,
+    //     dao.address,
+    //     ethers.utils.hexDataSlice(
+    //       ethers.utils.solidityKeccak256(
+    //         ["bytes"],
+    //         [
+    //           ethers.utils.solidityPack(
+    //             ["string"],
+    //             ["execute(address[],uint256[],bytes[])"]
+    //           ),
+    //         ]
+    //       ),
+    //       0,
+    //       4
+    //     )
+    //   )
+    // ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       upgrader.address,
-  //       dao.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        upgrader.address,
+        dao.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       executor.address,
-  //       dao.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(false);
-  // });
+    expect(
+      await accessControl.actionIsAuthorized(
+        executor.address,
+        dao.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(false);
+  });
 
-  // it("Sets up the correct Treasury action authorization", async () => {
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       withdrawer.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["withdrawEth(address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+  it("Sets up the correct Treasury action authorization", async () => {
+    expect(
+      await accessControl.actionIsAuthorized(
+        withdrawer.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["withdrawEth(address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       dao.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["withdrawEth(address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        dao.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["withdrawEth(address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       withdrawer.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["depositERC20Tokens(address[],address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        withdrawer.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["depositERC20Tokens(address[],address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       dao.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["depositERC20Tokens(address[],address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        dao.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["depositERC20Tokens(address[],address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       withdrawer.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["withdrawERC20Tokens(address[],address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        withdrawer.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["withdrawERC20Tokens(address[],address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       dao.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["withdrawERC20Tokens(address[],address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        dao.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["withdrawERC20Tokens(address[],address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       withdrawer.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["depositERC721Tokens(address[],address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        withdrawer.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["depositERC721Tokens(address[],address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       dao.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["depositERC721Tokens(address[],address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        dao.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["depositERC721Tokens(address[],address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       withdrawer.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["withdrawERC721Tokens(address[],address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        withdrawer.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["withdrawERC721Tokens(address[],address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       dao.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [
-  //             ethers.utils.solidityPack(
-  //               ["string"],
-  //               ["withdrawERC721Tokens(address[],address[],uint256[])"]
-  //             ),
-  //           ]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        dao.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["withdrawERC721Tokens(address[],address[],uint256[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       upgrader.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        upgrader.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       dao.address,
-  //       treasuryModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
-  // });
+    expect(
+      await accessControl.actionIsAuthorized(
+        dao.address,
+        treasuryModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
+  });
 
   // it("Sets up the correct Governor module action authorization", async () => {
   //   expect(
@@ -1007,31 +1001,21 @@ describe("MetaFactory", () => {
   //   ).to.eq(true);
   // });
 
-  // it("Supports the expected ERC165 interface", async () => {
-  //   // Supports Module Factory interface
-  //   expect(
-  //     await metaFactory.supportsInterface(
-  //       // eslint-disable-next-line camelcase
-  //       getInterfaceSelector(IMetaFactory__factory.createInterface())
-  //     )
-  //   ).to.eq(true);
-  //   // Supports ERC-165 interface
-  //   expect(await govFactory.supportsInterface("0x01ffc9a7")).to.eq(true);
-  // });
+  it("Supports the expected ERC165 interface", async () => {
+    // Supports Module Factory interface
+    expect(
+      await metaFactory.supportsInterface(
+        // eslint-disable-next-line camelcase
+        getInterfaceSelector(IMetaFactory__factory.createInterface())
+      )
+    ).to.eq(true);
+    // Supports ERC-165 interface
+    // expect(await govFactory.supportsInterface("0x01ffc9a7")).to.eq(true);
+  });
 
-  // it("Allocated correct token amounts", async () => {
-  //   expect(await token.balanceOf(treasuryModule.address)).to.eq(
-  //     ethers.utils.parseUnits("800", 18)
-  //   );
-
-  //   expect(await token.balanceOf(userA.address)).to.eq(
-  //     ethers.utils.parseUnits("100", 18)
-  //   );
-
-  //   expect(await token.balanceOf(userB.address)).to.eq(
-  //     ethers.utils.parseUnits("100", 18)
-  //   );
-  // });
+  it("Allocated correct token amounts", async () => {
+    expect(await token.balanceOf(treasuryModule.address)).to.eq(1000);
+  });
 
   // it("Supports creating, voting on, and executing a proposal", async () => {
   //   await delegateTokens(token, [userA, userB]);
