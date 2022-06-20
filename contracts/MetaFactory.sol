@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/utils/Address.sol";
 
 import "./interfaces/IMetaFactory.sol";
 import "@fractal-framework/core-contracts/contracts/interfaces/IDAO.sol";
-import "hardhat/console.sol";
 
 // Give the metafactory a temporary execute role (this is done in the DAO / access control creation)
 // Create the DAO and access control contracts
@@ -33,7 +32,6 @@ contract MetaFactory is IMetaFactory, ERC165 {
     uint256[] calldata values,
     bytes[] calldata calldatas
   ) external {
-    console.log(gasleft());
     createDAO(daoFactory, createDAOParams);
     execute(targets, values, calldatas);
   }
@@ -64,7 +62,6 @@ contract MetaFactory is IMetaFactory, ERC165 {
     string memory errorMessage = "MetaFactory: call reverted without message";
     uint256 targetlength = targets.length;
     for (uint256 i = 0; i < targetlength; ) {
-      console.log(gasleft());
       (bool success, bytes memory returndata) = targets[i].call{
         value: values[i]
       }(calldatas[i]);
@@ -72,7 +69,6 @@ contract MetaFactory is IMetaFactory, ERC165 {
       unchecked {
         i++;
       }
-      console.log(gasleft());
     }
     emit Executed(targets, values, calldatas);
   }
