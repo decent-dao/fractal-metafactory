@@ -222,7 +222,7 @@ describe("MetaFactory", () => {
       members: [
         [executor.address, metaFactory.address],
         [upgrader.address],
-        [withdrawer.address, dao.address, metaFactory.address],
+        [withdrawer.address, dao.address],
         [],
       ],
       daoFunctionDescs: [
@@ -266,13 +266,26 @@ describe("MetaFactory", () => {
           predictedTreasuryAddress,
           predictedTreasuryAddress,
           predictedTreasuryAddress,
+          predictedTreasuryAddress,
+          predictedTreasuryAddress,
+          predictedTreasuryAddress,
         ],
         [
           "withdrawEth(address[],uint256[])",
           "withdrawERC20Tokens(address[],address[],uint256[])",
           "withdrawERC721Tokens(address[],address[],uint256[])",
+          "depositERC20Tokens(address[],address[],uint256[])",
+          "depositERC721Tokens(address[],address[],uint256[])",
+          "upgradeTo(address)",
         ],
-        [["WITHDRAWER_ROLE"], ["WITHDRAWER_ROLE"], ["WITHDRAWER_ROLE"]],
+        [
+          ["WITHDRAWER_ROLE"],
+          ["WITHDRAWER_ROLE"],
+          ["WITHDRAWER_ROLE"],
+          ["OPEN_ROLE"],
+          ["OPEN_ROLE"],
+          ["UPGRADE_ROLE"],
+        ],
       ]);
 
     const outerAddActionsRolesCalldata = dao.interface.encodeFunctionData(
@@ -412,103 +425,103 @@ describe("MetaFactory", () => {
     ).to.eq(false);
   });
 
-  // it("Sets up the correct Treasury role authorization", async () => {
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "WITHDRAWER_ROLE",
-  //       treasuryModule.address,
-  //       "withdrawEth(address[],uint256[])"
-  //     )
-  //   ).to.eq(true);
+  it("Sets up the correct Treasury role authorization", async () => {
+    expect(
+      await accessControl.isRoleAuthorized(
+        "WITHDRAWER_ROLE",
+        treasuryModule.address,
+        "withdrawEth(address[],uint256[])"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       treasuryModule.address,
-  //       "withdrawEth(address[],uint256[])"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        treasuryModule.address,
+        "withdrawEth(address[],uint256[])"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "WITHDRAWER_ROLE",
-  //       treasuryModule.address,
-  //       "depositERC20Tokens(address[],address[],uint256[])"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "OPEN_ROLE",
+        treasuryModule.address,
+        "depositERC20Tokens(address[],address[],uint256[])"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       treasuryModule.address,
-  //       "depositERC20Tokens(address[],address[],uint256[])"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        treasuryModule.address,
+        "depositERC20Tokens(address[],address[],uint256[])"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "WITHDRAWER_ROLE",
-  //       treasuryModule.address,
-  //       "withdrawERC20Tokens(address[],address[],uint256[])"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "WITHDRAWER_ROLE",
+        treasuryModule.address,
+        "withdrawERC20Tokens(address[],address[],uint256[])"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       treasuryModule.address,
-  //       "withdrawERC20Tokens(address[],address[],uint256[])"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        treasuryModule.address,
+        "withdrawERC20Tokens(address[],address[],uint256[])"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "WITHDRAWER_ROLE",
-  //       treasuryModule.address,
-  //       "depositERC721Tokens(address[],address[],uint256[])"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "OPEN_ROLE",
+        treasuryModule.address,
+        "depositERC721Tokens(address[],address[],uint256[])"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       treasuryModule.address,
-  //       "depositERC721Tokens(address[],address[],uint256[])"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        treasuryModule.address,
+        "depositERC721Tokens(address[],address[],uint256[])"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "WITHDRAWER_ROLE",
-  //       treasuryModule.address,
-  //       "withdrawERC721Tokens(address[],address[],uint256[])"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "WITHDRAWER_ROLE",
+        treasuryModule.address,
+        "withdrawERC721Tokens(address[],address[],uint256[])"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       treasuryModule.address,
-  //       "withdrawERC721Tokens(address[],address[],uint256[])"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        treasuryModule.address,
+        "withdrawERC721Tokens(address[],address[],uint256[])"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       treasuryModule.address,
-  //       "upgradeTo(address)"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        treasuryModule.address,
+        "upgradeTo(address)"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "WITHDRAWER_ROLE",
-  //       treasuryModule.address,
-  //       "upgradeTo(address)"
-  //     )
-  //   ).to.eq(false);
-  // });
+    expect(
+      await accessControl.isRoleAuthorized(
+        "WITHDRAWER_ROLE",
+        treasuryModule.address,
+        "upgradeTo(address)"
+      )
+    ).to.eq(false);
+  });
 
   // it("Sets up the correct Governor module role authorization", async () => {
   //   expect(
