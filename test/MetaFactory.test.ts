@@ -206,8 +206,6 @@ describe("MetaFactory", () => {
       predictedTokenAddress
     );
 
-    console.log("Metafactory: ", metaFactory.address);
-
     const createDAOParams = {
       daoImplementation: daoImpl.address,
       daoFactory: daoFactory.address,
@@ -234,47 +232,6 @@ describe("MetaFactory", () => {
       daoActionRoles: [["EXECUTE_ROLE"], ["UPGRADE_ROLE"]],
     };
 
-    // [
-    //   predictedTreasuryAddress,
-    //   predictedTreasuryAddress,
-    //   predictedTreasuryAddress,
-    // ],
-    // [
-    //   "withdrawEth(address[],uint256[])",
-    //   "withdrawERC20Tokens(address[],address[],uint256[])",
-    //   "withdrawERC721Tokens(address[],address[],uint256[])",
-    // ],
-    // [["WITHDRAWER_ROLE"], ["WITHDRAWER_ROLE"], ["WITHDRAWER_ROLE"]],
-
-    //   contractIndexes: [2, 2, 2, 2, 2, 2, 4, 5, 5, 5, 5, 5],
-    //   functionDescs: [
-    //     "withdrawEth(address[],uint256[])",
-    //     "depositERC20Tokens(address[],address[],uint256[])",
-    //     "withdrawERC20Tokens(address[],address[],uint256[])",
-    //     "depositERC721Tokens(address[],address[],uint256[])",
-    //     "withdrawERC721Tokens(address[],address[],uint256[])",
-    //     "upgradeTo(address)",
-    //     "upgradeTo(address)",
-    //     "upgradeTo(address)",
-    //     "updateDelay(uint256)",
-    //     "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)",
-    //     "cancel(bytes32)",
-    //     "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)",
-    //   ],
-    //   roles: [
-    //     ["WITHDRAWER_ROLE"],
-    //     ["WITHDRAWER_ROLE"],
-    //     ["WITHDRAWER_ROLE"],
-    //     ["WITHDRAWER_ROLE"],
-    //     ["WITHDRAWER_ROLE"],
-    //     ["UPGRADE_ROLE"],
-    //     ["UPGRADE_ROLE"],
-    //     ["UPGRADE_ROLE"],
-    //     ["GOVERNOR_ROLE"],
-    //     ["GOVERNOR_ROLE"],
-    //     ["GOVERNOR_ROLE"],
-    //     ["GOVERNOR_ROLE"],
-
     const treasuryData = [
       abiCoder.encode(["address"], [predictedAccessControlAddress]),
       abiCoder.encode(["address"], [treasuryImpl.address]),
@@ -283,10 +240,6 @@ describe("MetaFactory", () => {
         [ethers.utils.formatBytes32String("treasurySalt")]
       ),
     ];
-
-    // const tx: ContractTransaction = await treasuryFactory
-    //   .connect(caller)
-    //   .create(data);
 
     const treasuryFactoryCalldata =
       treasuryFactory.interface.encodeFunctionData("create", [treasuryData]);
@@ -322,60 +275,9 @@ describe("MetaFactory", () => {
         [["WITHDRAWER_ROLE"], ["WITHDRAWER_ROLE"], ["WITHDRAWER_ROLE"]],
       ]);
 
-    // const innerAddActionsRolesCalldata =
-    //   accessControl.interface.encodeFunctionData("addActionsRoles", [
-    //     [],
-    //     [],
-    //     [],
-    //   ]);
-
-    // console.log(predictedTreasuryAddress);
-    // const addActionsRolesCalldata = accessControl.interface.encodeFunctionData(
-    //   "addActionsRoles",
-    //   [
-    //     [predictedTreasuryAddress],
-    //     ["withdrawEth(address[],uint256[])"],
-    //     [["WITHDRAWER_ROLE"]],
-    //   ]
-    // );
-
-    // const innerAddActionsRolesCalldata =
-    //   accessControl.interface.encodeFunctionData("grantRoles", [
-    //     ["ARB_ROLE"],
-    //     [[deployer.address]],
-    //   ]);
-
     const outerAddActionsRolesCalldata = dao.interface.encodeFunctionData(
       "execute",
       [[accessControl.address], [0], [innerAddActionsRolesCalldata]]
-    );
-
-    // withdrawERC20Tokens(
-    //   address[] calldata tokenAddresses,
-    //   address[] calldata recipients,
-    //   uint256[] calldata amounts
-    // )
-
-    // const innerWithdrawTokensCalldata =
-    //   treasuryModule.interface.encodeFunctionData("withdrawERC20Tokens", [
-    //     [predictedTokenAddress],
-    //     [deployer.address],
-    //     [10],
-    //   ]);
-
-    // const outerWithdrawTokensCalldata = dao.interface.encodeFunctionData(
-    //   "execute",
-    //   [[treasuryModule.address], [0], [innerWithdrawTokensCalldata]]
-    // );
-
-    const innerTokenTransferCalldata = token.interface.encodeFunctionData(
-      "transfer",
-      [deployer.address, 1000]
-    );
-
-    const outerTokenTransferCalldata = dao.interface.encodeFunctionData(
-      "execute",
-      [[token.address], [0], [innerTokenTransferCalldata]]
     );
 
     const revokeMetafactoryRoleCalldata =
@@ -384,169 +286,30 @@ describe("MetaFactory", () => {
         metaFactory.address,
       ]);
 
+    await network.provider.send("evm_mine");
     tx = await metaFactory.createDAOAndExecute(
       daoFactory.address,
       createDAOParams,
-      [treasuryFactory.address, tokenFactory.address],
-      [0, 0],
-      [treasuryFactoryCalldata, tokenFactoryCalldata]
+      [
+        treasuryFactory.address,
+        tokenFactory.address,
+        dao.address,
+        accessControl.address,
+      ],
+      [0, 0, 0, 0],
+      [
+        treasuryFactoryCalldata,
+        tokenFactoryCalldata,
+        outerAddActionsRolesCalldata,
+        revokeMetafactoryRoleCalldata,
+      ],
+      {
+        gasLimit: 30000000,
+      }
     );
-
-    // eslint-disable-next-line camelcase
-    // token = VotesTokenWithSupply__factory.connect(
-    //   predictedTokenAddress,
-    //   deployer
-    // );
-
-    // const moduleFactoriesCalldata = [
-    //   {
-    //     factory: treasuryFactory.address,
-    //     data: [abiCoder.encode(["address"], [treasuryImpl.address])],
-    //     value: 0,
-    //     newContractAddressesToPass: [1],
-    //     addressesReturned: 1,
-    //   },
-    //   {
-    //     factory: tokenFactory.address,
-    //     data: [
-    //       abiCoder.encode(["string"], ["DECENT"]),
-    //       abiCoder.encode(["string"], ["DCNT"]),
-    //       abiCoder.encode(["address[]"], [[userA.address, userB.address]]),
-    //       abiCoder.encode(
-    //         ["uint256[]"],
-    //         [
-    //           [
-    //             ethers.utils.parseUnits("100", 18),
-    //             ethers.utils.parseUnits("100", 18),
-    //           ],
-    //         ]
-    //       ),
-    //       abiCoder.encode(["uint256"], [ethers.utils.parseUnits("1000", 18)]),
-    //     ],
-    //     value: 0,
-    //     newContractAddressesToPass: [2],
-    //     addressesReturned: 1,
-    //   },
-    //   {
-    //     factory: govFactory.address,
-    //     data: [
-    //       abiCoder.encode(["address"], [govImpl.address]),
-    //       abiCoder.encode(["address"], [timelockImpl.address]),
-    //       abiCoder.encode(["string"], ["TestGov"]),
-    //       abiCoder.encode(["uint64"], [BigNumber.from("0")]),
-    //       abiCoder.encode(["uint256"], [BigNumber.from("1")]),
-    //       abiCoder.encode(["uint256"], [BigNumber.from("5")]),
-    //       abiCoder.encode(["uint256"], [BigNumber.from("0")]),
-    //       abiCoder.encode(["uint256"], [BigNumber.from("4")]),
-    //       abiCoder.encode(["uint256"], [BigNumber.from("1")]),
-    //     ],
-    //     value: 0,
-    //     newContractAddressesToPass: [0, 1, 3],
-    //     addressesReturned: 2,
-    //   },
-    // ];
-
-    // const moduleActionCalldata = {
-    //   contractIndexes: [2, 2, 2, 2, 2, 2, 4, 5, 5, 5, 5, 5],
-    //   functionDescs: [
-    //     "withdrawEth(address[],uint256[])",
-    //     "depositERC20Tokens(address[],address[],uint256[])",
-    //     "withdrawERC20Tokens(address[],address[],uint256[])",
-    //     "depositERC721Tokens(address[],address[],uint256[])",
-    //     "withdrawERC721Tokens(address[],address[],uint256[])",
-    //     "upgradeTo(address)",
-    //     "upgradeTo(address)",
-    //     "upgradeTo(address)",
-    //     "updateDelay(uint256)",
-    //     "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)",
-    //     "cancel(bytes32)",
-    //     "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)",
-    //   ],
-    //   roles: [
-    //     ["WITHDRAWER_ROLE"],
-    //     ["WITHDRAWER_ROLE"],
-    //     ["WITHDRAWER_ROLE"],
-    //     ["WITHDRAWER_ROLE"],
-    //     ["WITHDRAWER_ROLE"],
-    //     ["UPGRADE_ROLE"],
-    //     ["UPGRADE_ROLE"],
-    //     ["UPGRADE_ROLE"],
-    //     ["GOVERNOR_ROLE"],
-    //     ["GOVERNOR_ROLE"],
-    //     ["GOVERNOR_ROLE"],
-    //     ["GOVERNOR_ROLE"],
-    //   ],
-    // };
-
-    // [
-    //   daoAddress,
-    //   accessControlAddress,
-    //   treasuryAddress,
-    //   tokenAddress,
-    //   governorAddress,
-    //   timelockAddress,
-    // ] = await metaFactory.callStatic.createDAOAndModules(
-    //   daoFactory.address,
-    //   0,
-    //   createDAOParams,
-    //   moduleFactoriesCalldata,
-    //   moduleActionCalldata,
-    //   [[5], [0], [0], [4]]
-    // );
-
-    // createTx = await metaFactory
-    //   .connect(deployer)
-    //   .createDAOAndModules(
-    //     daoFactory.address,
-    //     0,
-    //     createDAOParams,
-    //     moduleFactoriesCalldata,
-    //     moduleActionCalldata,
-    //     [[5], [0], [0], [4]]
-    //   );
-
-    // eslint-disable-next-line camelcase
-    // dao = DAO__factory.connect(daoAddress, deployer);
-
-    // // eslint-disable-next-line camelcase
-    // accessControl = DAOAccessControl__factory.connect(
-    //   accessControlAddress,
-    //   deployer
-    // );
-
-    // // eslint-disable-next-line camelcase
-    // treasuryModule = TreasuryModule__factory.connect(treasuryAddress, deployer);
-
-    // // eslint-disable-next-line camelcase
-    // token = VotesTokenWithSupply__factory.connect(tokenAddress, deployer);
-
-    // // eslint-disable-next-line camelcase
-    // govModule = GovernorModule__factory.connect(governorAddress, deployer);
-
-    // // eslint-disable-next-line camelcase
-    // timelock = TimelockUpgradeable__factory.connect(timelockAddress, deployer);
-  });
-
-  it("Executor can execute", async () => {
-    const innerTokenTransferCalldata = token.interface.encodeFunctionData(
-      "transfer",
-      [deployer.address, 1000]
-    );
-
-    await dao
-      .connect(executor)
-      .execute([token.address], [0], [innerTokenTransferCalldata]);
   });
 
   it("Emitted events with expected deployed contract addresses", async () => {
-    expect(await token.symbol()).to.eq("DCNT");
-
-    // console.log("Metafactory2: ", metaFactory.address);
-    // expect(
-    //   await accessControl.hasRole("EXECUTE_ROLE", metaFactory.address)
-    // ).to.eq(true);
-    // expect(await accessControl.hasRole("DAO_ROLE", dao.address)).to.eq(true);
-
     await expect(tx)
       .to.emit(metaFactory, "DAOCreated")
       .withArgs(dao.address, accessControl.address, deployer.address);
