@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 
 /// @notice Token Factory used to deploy votes tokens
 contract TokenFactory is ITokenFactory, ERC165 {
+    event TokenCreated(address indexed tokenAddress);
+
     /// @dev Creates an ERC-20 votes token
     /// @param data The array of bytes used to create the token
     /// @return address The address of the created token
@@ -31,6 +33,8 @@ contract TokenFactory is ITokenFactory, ERC165 {
                 abi.encode(name, symbol, hodlers, allocations)
             )
         );
+
+        emit TokenCreated(createdContracts[0]);
 
         return createdContracts;
     }

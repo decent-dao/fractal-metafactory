@@ -8,6 +8,7 @@ import "@typechain/hardhat";
 import "hardhat-tracer";
 import "solidity-coverage";
 import "hardhat-dependency-compiler";
+import "hardhat-gas-reporter";
 
 dotenv.config();
 
@@ -37,7 +38,7 @@ const config: HardhatUserConfig = {
   dependencyCompiler: {
     paths: [
       "@fractal-framework/core-contracts/contracts/DAO.sol",
-      "@fractal-framework/core-contracts/contracts/AccessControlDAO.sol",
+      "@fractal-framework/core-contracts/contracts/DAOAccessControl.sol",
       "@fractal-framework/core-contracts/contracts/DAOFactory.sol",
     ],
   },
