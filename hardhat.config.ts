@@ -8,7 +8,6 @@ import "@typechain/hardhat";
 import "hardhat-tracer";
 import "solidity-coverage";
 import "hardhat-dependency-compiler";
-import "hardhat-gas-reporter";
 
 dotenv.config();
 
