@@ -20,27 +20,23 @@ contract GovernorModule is
 {
     /// @dev Configures Gov Module implementation
     /// @dev Called once during deployment atomically
-    /// @param _name Name of the DAO
     /// @param _token Voting token uses snapshot feature
     /// @param _timelock Timelock vest proposals to allow detractors to exit system
-    /// @param _initialVoteExtension Allow users to vote if quorum attack is preformed
     /// @param _initialVotingDelay Allow users to research proposals before voting period
     /// @param _initialVotingPeriod Length of voting period (blocks)
     /// @param _initialProposalThreshold Total tokens required to submit a proposal
     /// @param _initialQuorumNumeratorValue Total votes needed to reach quorum
     /// @param _accessControl Address of Access Control
     function initialize(
-        string memory _name,
         IVotesUpgradeable _token,
         ITimelockUpgradeable _timelock,
-        uint64 _initialVoteExtension,
         uint256 _initialVotingDelay,
         uint256 _initialVotingPeriod,
         uint256 _initialProposalThreshold,
         uint256 _initialQuorumNumeratorValue,
         address _accessControl
     ) external initializer {
-        __Governor_init(_name);
+        __Governor_init("Governor Module");
         __GovernorSettings_init(
             _initialVotingDelay,
             _initialVotingPeriod,
@@ -103,7 +99,7 @@ contract GovernorModule is
     function getVotes(address account, uint256 blockNumber)
         public
         view
-        override(IGovernorUpgradeable, GovernorUpgradeable)
+        override(GovernorUpgradeable, IGovernorUpgradeable)
         returns (uint256)
     {
         return super.getVotes(account, blockNumber);
