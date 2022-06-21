@@ -10,14 +10,11 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/IMetaFactory.sol";
 import "@fractal-framework/core-contracts/contracts/interfaces/IDAO.sol";
 
-// Give the metafactory a temporary execute role (this is done in the DAO / access control creation)
-// Create the DAO and access control contracts
-// Create the DAO modules
-// Add actions roles
-// Add Module roles
-
-/// todo: Add warning comments for Metafactory roles over DAO
 /// @notice A factory contract for deploying DAOs along with any desired modules within one transaction
+/// @dev For the Metafactory to be able to call the execute function on the created DAO, it needs to be given
+/// @dev a role that has permissions to call this function. It is critical to have the MetaFactory then revoke
+/// @dev this role within the same transaction, so that the MetaFactory cannot be used to perform arbitrary 
+/// @dev execution calls on the DAO in the future.
 contract MetaFactory is IMetaFactory, ERC165 {
   /// @notice Creates a DAO, Access Control, and any modules specified
   /// @param daoFactory The address of the DAO factory
@@ -36,6 +33,9 @@ contract MetaFactory is IMetaFactory, ERC165 {
     execute(targets, values, calldatas);
   }
 
+  /// @notice A function for creating the DAO and Access Control contracts
+  /// @param daoFactory The address of the DAO factory
+  /// @param createDAOParams The struct of parameters used for creating the DAO and Access Control contracts
   function createDAO(
     address daoFactory,
     IDAOFactory.CreateDAOParams memory createDAOParams
