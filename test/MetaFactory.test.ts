@@ -10,14 +10,14 @@ import {
   DAOAccessControl__factory,
   IMetaFactory__factory,
   MetaFactory,
-  // GovernorModule,
-  // GovernorModule__factory,
-  // GovernorFactory,
+  GovernorModule,
+  GovernorModule__factory,
+  GovernorFactory,
   TreasuryModule,
   TreasuryModule__factory,
   TreasuryModuleFactory,
-  // TimelockUpgradeable,
-  // TimelockUpgradeable__factory,
+  TimelockUpgradeable,
+  TimelockUpgradeable__factory,
   TokenFactory,
   VotesTokenWithSupply,
   VotesTokenWithSupply__factory,
@@ -25,20 +25,20 @@ import {
   DAOFactory__factory,
   TreasuryModuleFactory__factory,
   TokenFactory__factory,
-  // GovernorFactory__factory,
+  GovernorFactory__factory,
   ERC1967Proxy__factory,
 } from "../typechain-types";
 import getInterfaceSelector from "./helpers/getInterfaceSelector";
 import {
   VoteType,
-  // govModPropose,
-  // delegateTokens,
+  govModPropose,
+  delegateTokens,
 } from "./helpers/governorModuleHelpers";
 
 describe("MetaFactory", () => {
   // Factories
   let daoFactory: DAOFactory;
-  // let govFactory: GovernorFactory;
+  let govFactory: GovernorFactory;
   let treasuryFactory: TreasuryModuleFactory;
   let metaFactory: MetaFactory;
   let tokenFactory: TokenFactory;
@@ -46,24 +46,16 @@ describe("MetaFactory", () => {
   // Impl
   let accessControlImpl: DAOAccessControl;
   let daoImpl: DAO;
-  // let govImpl: GovernorModule;
-  // let timelockImpl: TimelockUpgradeable;
+  let govImpl: GovernorModule;
+  let timelockImpl: TimelockUpgradeable;
   let treasuryImpl: TreasuryModule;
-
-  // Deployed contract addresses
-  let daoAddress: string;
-  let accessControlAddress: string;
-  let timelockAddress: string;
-  // let governorAddress: string;
-  let treasuryAddress: string;
-  let tokenAddress: string;
 
   // Deployed contracts
   let accessControl: DAOAccessControl;
   let dao: DAO;
-  // let govModule: GovernorModule;
+  let govModule: GovernorModule;
   let treasuryModule: TreasuryModule;
-  // let timelock: TimelockUpgradeable;
+  let timelock: TimelockUpgradeable;
   let token: VotesTokenWithSupply;
 
   // Wallets
@@ -72,12 +64,11 @@ describe("MetaFactory", () => {
   let executor: SignerWithAddress;
   let withdrawer: SignerWithAddress;
   let userA: SignerWithAddress;
-  let userB: SignerWithAddress;
 
   let tx: ContractTransaction;
 
   beforeEach(async () => {
-    [deployer, upgrader, executor, withdrawer, userA, userB] =
+    [deployer, upgrader, executor, withdrawer, userA] =
       await ethers.getSigners();
 
     // Get deployed MetaFactory contract
@@ -89,14 +80,14 @@ describe("MetaFactory", () => {
       deployer
     ).deploy();
     tokenFactory = await new TokenFactory__factory(deployer).deploy();
-    // govFactory = await new GovernorFactory__factory(deployer).deploy();
+    govFactory = await new GovernorFactory__factory(deployer).deploy();
 
     // Get deployed implementation contracts
     daoImpl = await new DAO__factory(deployer).deploy();
     accessControlImpl = await new DAOAccessControl__factory(deployer).deploy();
     treasuryImpl = await new TreasuryModule__factory(deployer).deploy();
-    // govImpl = await new GovernorModule__factory(deployer).deploy();
-    // timelockImpl = await new TimelockUpgradeable__factory(deployer).deploy();
+    govImpl = await new GovernorModule__factory(deployer).deploy();
+    timelockImpl = await new TimelockUpgradeable__factory(deployer).deploy();
 
     const abiCoder = new ethers.utils.AbiCoder();
     const { chainId } = await ethers.provider.getNetwork();
@@ -181,8 +172,53 @@ describe("MetaFactory", () => {
           VotesTokenWithSupply__factory.bytecode,
           abiCoder.encode(
             ["string", "string", "address[]", "uint256[]"],
-            ["DCNT", "DCNT", [predictedTreasuryAddress], [1000]]
+            [
+              "DCNT",
+              "DCNT",
+              [predictedTreasuryAddress, userA.address],
+              [1000, 1000],
+            ]
           ),
+        ]
+      )
+    );
+
+    const predictedGovernorAddress = ethers.utils.getCreate2Address(
+      govFactory.address,
+      ethers.utils.solidityKeccak256(
+        ["address", "uint256", "bytes32"],
+        [
+          deployer.address,
+          chainId,
+          ethers.utils.formatBytes32String("governorSalt"),
+        ]
+      ),
+      ethers.utils.solidityKeccak256(
+        ["bytes", "bytes"],
+        [
+          // eslint-disable-next-line camelcase
+          ERC1967Proxy__factory.bytecode,
+          abiCoder.encode(["address", "bytes"], [govImpl.address, []]),
+        ]
+      )
+    );
+
+    const predictedTimelockAddress = ethers.utils.getCreate2Address(
+      govFactory.address,
+      ethers.utils.solidityKeccak256(
+        ["address", "uint256", "bytes32"],
+        [
+          deployer.address,
+          chainId,
+          ethers.utils.formatBytes32String("governorSalt"),
+        ]
+      ),
+      ethers.utils.solidityKeccak256(
+        ["bytes", "bytes"],
+        [
+          // eslint-disable-next-line camelcase
+          ERC1967Proxy__factory.bytecode,
+          abiCoder.encode(["address", "bytes"], [timelockImpl.address, []]),
         ]
       )
     );
@@ -200,6 +236,14 @@ describe("MetaFactory", () => {
       "VotesTokenWithSupply",
       predictedTokenAddress
     );
+    govModule = await ethers.getContractAt(
+      "GovernorModule",
+      predictedGovernorAddress
+    );
+    timelock = await ethers.getContractAt(
+      "TimelockUpgradeable",
+      predictedTimelockAddress
+    );
 
     const createDAOParams = {
       daoImplementation: daoImpl.address,
@@ -215,10 +259,10 @@ describe("MetaFactory", () => {
       ],
       rolesAdmins: ["DAO_ROLE", "DAO_ROLE", "DAO_ROLE", "DAO_ROLE"],
       members: [
-        [metaFactory.address, executor.address],
+        [metaFactory.address, executor.address, timelock.address],
         [dao.address, upgrader.address],
         [dao.address, withdrawer.address],
-        [],
+        [govModule.address],
       ],
       daoFunctionDescs: [
         "execute(address[],uint256[],bytes[])",
@@ -242,8 +286,8 @@ describe("MetaFactory", () => {
     const tokenFactoryData = [
       abiCoder.encode(["string"], ["DCNT"]),
       abiCoder.encode(["string"], ["DCNT"]),
-      abiCoder.encode(["address[]"], [[treasuryModule.address]]),
-      abiCoder.encode(["uint256[]"], [[1000]]),
+      abiCoder.encode(["address[]"], [[treasuryModule.address, userA.address]]),
+      abiCoder.encode(["uint256[]"], [[1000, 1000]]),
       abiCoder.encode(
         ["bytes32"],
         [ethers.utils.formatBytes32String("tokenSalt")]
@@ -255,6 +299,29 @@ describe("MetaFactory", () => {
       [tokenFactoryData]
     );
 
+    const governorFactoryData = [
+      abiCoder.encode(["address"], [dao.address]),
+      abiCoder.encode(["address"], [accessControl.address]),
+      abiCoder.encode(["address"], [token.address]),
+      abiCoder.encode(["address"], [govImpl.address]),
+      abiCoder.encode(["address"], [timelockImpl.address]),
+      abiCoder.encode(["uint64"], [BigNumber.from("0")]),
+      abiCoder.encode(["uint256"], [BigNumber.from("1")]),
+      abiCoder.encode(["uint256"], [BigNumber.from("5")]),
+      abiCoder.encode(["uint256"], [BigNumber.from("0")]),
+      abiCoder.encode(["uint256"], [BigNumber.from("4")]),
+      abiCoder.encode(["uint256"], [BigNumber.from("1")]),
+      abiCoder.encode(
+        ["bytes32"],
+        [ethers.utils.formatBytes32String("governorSalt")]
+      ),
+    ];
+
+    const governorFactoryCalldata = govFactory.interface.encodeFunctionData(
+      "create",
+      [governorFactoryData]
+    );
+
     const innerAddActionsRolesCalldata =
       accessControl.interface.encodeFunctionData("addActionsRoles", [
         [
@@ -264,6 +331,12 @@ describe("MetaFactory", () => {
           predictedTreasuryAddress,
           predictedTreasuryAddress,
           predictedTreasuryAddress,
+          predictedGovernorAddress,
+          predictedTimelockAddress,
+          predictedTimelockAddress,
+          predictedTimelockAddress,
+          predictedTimelockAddress,
+          predictedTimelockAddress,
         ],
         [
           "withdrawEth(address[],uint256[])",
@@ -272,6 +345,12 @@ describe("MetaFactory", () => {
           "depositERC20Tokens(address[],address[],uint256[])",
           "depositERC721Tokens(address[],address[],uint256[])",
           "upgradeTo(address)",
+          "upgradeTo(address)",
+          "upgradeTo(address)",
+          "updateDelay(uint256)",
+          "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)",
+          "cancel(bytes32)",
+          "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)",
         ],
         [
           ["WITHDRAWER_ROLE"],
@@ -280,6 +359,12 @@ describe("MetaFactory", () => {
           ["OPEN_ROLE"],
           ["OPEN_ROLE"],
           ["UPGRADE_ROLE"],
+          ["UPGRADE_ROLE"],
+          ["UPGRADE_ROLE"],
+          ["GOVERNOR_ROLE"],
+          ["GOVERNOR_ROLE"],
+          ["GOVERNOR_ROLE"],
+          ["GOVERNOR_ROLE"],
         ],
       ]);
 
@@ -300,13 +385,15 @@ describe("MetaFactory", () => {
       [
         treasuryFactory.address,
         tokenFactory.address,
+        govFactory.address,
         dao.address,
         accessControl.address,
       ],
-      [0, 0, 0, 0],
+      [0, 0, 0, 0, 0],
       [
         treasuryFactoryCalldata,
         tokenFactoryCalldata,
+        governorFactoryCalldata,
         outerAddActionsRolesCalldata,
         revokeMetafactoryRoleCalldata,
       ],
@@ -338,7 +425,9 @@ describe("MetaFactory", () => {
       .to.emit(tokenFactory, "TokenCreated")
       .withArgs(token.address);
 
-    // todo: add governor module event check
+    await expect(tx)
+      .to.emit(govFactory, "GovernorCreated")
+      .withArgs(govModule.address, timelock.address);
   });
 
   it("Setup the correct roles", async () => {
@@ -367,6 +456,10 @@ describe("MetaFactory", () => {
     expect(await accessControl.hasRole("UPGRADE_ROLE", executor.address)).to.eq(
       false
     );
+
+    expect(
+      await accessControl.hasRole("GOVERNOR_ROLE", govModule.address)
+    ).to.eq(true);
   });
 
   it("Sets up the correct DAO role authorization", async () => {
@@ -517,121 +610,121 @@ describe("MetaFactory", () => {
     ).to.eq(false);
   });
 
-  // it("Sets up the correct Governor module role authorization", async () => {
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       govModule.address,
-  //       "upgradeTo(address)"
-  //     )
-  //   ).to.eq(true);
+  it("Sets up the correct Governor module role authorization", async () => {
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        govModule.address,
+        "upgradeTo(address)"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "WITHDRAWER_ROLE",
-  //       govModule.address,
-  //       "upgradeTo(address)"
-  //     )
-  //   ).to.eq(false);
-  // });
+    expect(
+      await accessControl.isRoleAuthorized(
+        "WITHDRAWER_ROLE",
+        govModule.address,
+        "upgradeTo(address)"
+      )
+    ).to.eq(false);
+  });
 
-  // it("Sets up the correct timelock role authorization", async () => {
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       timelock.address,
-  //       "upgradeTo(address)"
-  //     )
-  //   ).to.eq(true);
+  it("Sets up the correct timelock role authorization", async () => {
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        timelock.address,
+        "upgradeTo(address)"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "GOVERNOR_ROLE",
-  //       timelock.address,
-  //       "upgradeTo(address)"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "GOVERNOR_ROLE",
+        timelock.address,
+        "upgradeTo(address)"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "GOVERNOR_ROLE",
-  //       timelock.address,
-  //       "updateDelay(uint256)"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "GOVERNOR_ROLE",
+        timelock.address,
+        "updateDelay(uint256)"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       timelock.address,
-  //       "updateDelay(uint256)"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        timelock.address,
+        "updateDelay(uint256)"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "GOVERNOR_ROLE",
-  //       timelock.address,
-  //       "updateDelay(uint256)"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "GOVERNOR_ROLE",
+        timelock.address,
+        "updateDelay(uint256)"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       timelock.address,
-  //       "updateDelay(uint256)"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        timelock.address,
+        "updateDelay(uint256)"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "GOVERNOR_ROLE",
-  //       timelock.address,
-  //       "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "GOVERNOR_ROLE",
+        timelock.address,
+        "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       timelock.address,
-  //       "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        timelock.address,
+        "scheduleBatch(address[],uint256[],bytes[],bytes32,bytes32,uint256)"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "GOVERNOR_ROLE",
-  //       timelock.address,
-  //       "cancel(bytes32)"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "GOVERNOR_ROLE",
+        timelock.address,
+        "cancel(bytes32)"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       timelock.address,
-  //       "cancel(bytes32)"
-  //     )
-  //   ).to.eq(false);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        timelock.address,
+        "cancel(bytes32)"
+      )
+    ).to.eq(false);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "GOVERNOR_ROLE",
-  //       timelock.address,
-  //       "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)"
-  //     )
-  //   ).to.eq(true);
+    expect(
+      await accessControl.isRoleAuthorized(
+        "GOVERNOR_ROLE",
+        timelock.address,
+        "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)"
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.isRoleAuthorized(
-  //       "UPGRADE_ROLE",
-  //       timelock.address,
-  //       "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)"
-  //     )
-  //   ).to.eq(false);
-  // });
+    expect(
+      await accessControl.isRoleAuthorized(
+        "UPGRADE_ROLE",
+        timelock.address,
+        "executeBatch(address[],uint256[],bytes[],bytes32,bytes32)"
+      )
+    ).to.eq(false);
+  });
 
   it("Sets up the correct DAO action authorization", async () => {
     expect(
@@ -654,25 +747,25 @@ describe("MetaFactory", () => {
       )
     ).to.eq(true);
 
-    // expect(
-    //   await accessControl.actionIsAuthorized(
-    //     timelock.address,
-    //     dao.address,
-    //     ethers.utils.hexDataSlice(
-    //       ethers.utils.solidityKeccak256(
-    //         ["bytes"],
-    //         [
-    //           ethers.utils.solidityPack(
-    //             ["string"],
-    //             ["execute(address[],uint256[],bytes[])"]
-    //           ),
-    //         ]
-    //       ),
-    //       0,
-    //       4
-    //     )
-    //   )
-    // ).to.eq(true);
+    expect(
+      await accessControl.actionIsAuthorized(
+        timelock.address,
+        dao.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [
+              ethers.utils.solidityPack(
+                ["string"],
+                ["execute(address[],uint256[],bytes[])"]
+              ),
+            ]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
     expect(
       await accessControl.actionIsAuthorized(
@@ -937,69 +1030,69 @@ describe("MetaFactory", () => {
     ).to.eq(true);
   });
 
-  // it("Sets up the correct Governor module action authorization", async () => {
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       upgrader.address,
-  //       govModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+  it("Sets up the correct Governor module action authorization", async () => {
+    expect(
+      await accessControl.actionIsAuthorized(
+        upgrader.address,
+        govModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       dao.address,
-  //       govModule.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
-  // });
+    expect(
+      await accessControl.actionIsAuthorized(
+        dao.address,
+        govModule.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
+  });
 
-  // it("Sets up the correct timelock action authorization", async () => {
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       upgrader.address,
-  //       timelock.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
+  it("Sets up the correct timelock action authorization", async () => {
+    expect(
+      await accessControl.actionIsAuthorized(
+        upgrader.address,
+        timelock.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
 
-  //   expect(
-  //     await accessControl.actionIsAuthorized(
-  //       dao.address,
-  //       timelock.address,
-  //       ethers.utils.hexDataSlice(
-  //         ethers.utils.solidityKeccak256(
-  //           ["bytes"],
-  //           [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
-  //         ),
-  //         0,
-  //         4
-  //       )
-  //     )
-  //   ).to.eq(true);
-  // });
+    expect(
+      await accessControl.actionIsAuthorized(
+        dao.address,
+        timelock.address,
+        ethers.utils.hexDataSlice(
+          ethers.utils.solidityKeccak256(
+            ["bytes"],
+            [ethers.utils.solidityPack(["string"], ["upgradeTo(address)"])]
+          ),
+          0,
+          4
+        )
+      )
+    ).to.eq(true);
+  });
 
   it("Supports the expected ERC165 interface", async () => {
     // Supports Module Factory interface
@@ -1009,69 +1102,62 @@ describe("MetaFactory", () => {
         getInterfaceSelector(IMetaFactory__factory.createInterface())
       )
     ).to.eq(true);
-    // Supports ERC-165 interface
-    // expect(await govFactory.supportsInterface("0x01ffc9a7")).to.eq(true);
   });
 
   it("Allocated correct token amounts", async () => {
     expect(await token.balanceOf(treasuryModule.address)).to.eq(1000);
   });
 
-  // it("Supports creating, voting on, and executing a proposal", async () => {
-  //   await delegateTokens(token, [userA, userB]);
+  it("Supports creating, voting on, and executing a proposal", async () => {
+    await delegateTokens(token, [userA]);
 
-  //   const transferCallData = treasuryModule.interface.encodeFunctionData(
-  //     "withdrawERC20Tokens",
-  //     [[token.address], [userA.address], [ethers.utils.parseUnits("100", 18)]]
-  //   );
+    const transferCallData = treasuryModule.interface.encodeFunctionData(
+      "withdrawERC20Tokens",
+      [[token.address], [userA.address], [100]]
+    );
 
-  //   const proposalCreatedEvent = await govModPropose(
-  //     [treasuryModule.address],
-  //     [BigNumber.from("0")],
-  //     govModule,
-  //     userA,
-  //     [transferCallData],
-  //     "Proposal #1: transfer 100 tokens from treasury to User A"
-  //   );
+    const proposalCreatedEvent = await govModPropose(
+      [treasuryModule.address],
+      [BigNumber.from("0")],
+      govModule,
+      userA,
+      [transferCallData],
+      "Proposal #1: transfer 100 tokens from treasury to User A"
+    );
 
-  //   await network.provider.send("evm_mine");
+    await network.provider.send("evm_mine");
 
-  //   // Users A and B vote "For"
-  //   await govModule
-  //     .connect(userA)
-  //     .castVote(proposalCreatedEvent.proposalId, VoteType.For);
-  //   await govModule
-  //     .connect(userB)
-  //     .castVote(proposalCreatedEvent.proposalId, VoteType.For);
+    // Users A votes "For"
+    await govModule
+      .connect(userA)
+      .castVote(proposalCreatedEvent.proposalId, VoteType.For);
 
-  //   await network.provider.send("evm_mine");
-  //   await network.provider.send("evm_mine");
-  //   await network.provider.send("evm_mine");
+    await network.provider.send("evm_mine");
+    await network.provider.send("evm_mine");
+    await network.provider.send("evm_mine");
+    await network.provider.send("evm_mine");
+    await network.provider.send("evm_mine");
 
-  //   await govModule
-  //     .connect(userA)
-  //     .queue(
-  //       proposalCreatedEvent.targets,
-  //       proposalCreatedEvent._values,
-  //       proposalCreatedEvent.calldatas,
-  //       ethers.utils.id(proposalCreatedEvent.description)
-  //     );
+    await govModule
+      .connect(userA)
+      .queue(
+        proposalCreatedEvent.targets,
+        proposalCreatedEvent._values,
+        proposalCreatedEvent.calldatas,
+        ethers.utils.id(proposalCreatedEvent.description)
+      );
 
-  //   await govModule
-  //     .connect(userA)
-  //     .execute(
-  //       proposalCreatedEvent.targets,
-  //       proposalCreatedEvent._values,
-  //       proposalCreatedEvent.calldatas,
-  //       ethers.utils.id(proposalCreatedEvent.description)
-  //     );
+    await govModule
+      .connect(userA)
+      .execute(
+        proposalCreatedEvent.targets,
+        proposalCreatedEvent._values,
+        proposalCreatedEvent.calldatas,
+        ethers.utils.id(proposalCreatedEvent.description)
+      );
 
-  //   expect(await token.balanceOf(treasuryModule.address)).to.eq(
-  //     ethers.utils.parseUnits("700", 18)
-  //   );
+    expect(await token.balanceOf(treasuryModule.address)).to.eq(900);
 
-  //   expect(await token.balanceOf(userA.address)).to.eq(
-  //     ethers.utils.parseUnits("200", 18)
-  //   );
-  // });
+    expect(await token.balanceOf(userA.address)).to.eq(1100);
+  });
 });
