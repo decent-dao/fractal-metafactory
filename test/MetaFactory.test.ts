@@ -323,7 +323,7 @@ describe("MetaFactory", () => {
     );
 
     const innerAddActionsRolesCalldata =
-      accessControl.interface.encodeFunctionData("addActionsRoles", [
+      accessControl.interface.encodeFunctionData("daoAddActionsRoles", [
         [
           predictedTreasuryAddress,
           predictedTreasuryAddress,
@@ -374,7 +374,7 @@ describe("MetaFactory", () => {
     );
 
     const revokeMetafactoryRoleCalldata =
-      accessControl.interface.encodeFunctionData("renounceRole", [
+      accessControl.interface.encodeFunctionData("userRenounceRole", [
         "EXECUTE_ROLE",
         metaFactory.address,
       ]);
