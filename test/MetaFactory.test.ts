@@ -16,8 +16,8 @@ import {
   TreasuryModule,
   TreasuryModule__factory,
   TreasuryModuleFactory,
-  TimelockUpgradeable,
-  TimelockUpgradeable__factory,
+  Timelock,
+  Timelock__factory,
   TokenFactory,
   VotesTokenWithSupply,
   VotesTokenWithSupply__factory,
@@ -47,7 +47,7 @@ describe("MetaFactory", () => {
   let accessControlImpl: DAOAccessControl;
   let daoImpl: DAO;
   let govImpl: GovernorModule;
-  let timelockImpl: TimelockUpgradeable;
+  let timelockImpl: Timelock;
   let treasuryImpl: TreasuryModule;
 
   // Deployed contracts
@@ -55,7 +55,7 @@ describe("MetaFactory", () => {
   let dao: DAO;
   let govModule: GovernorModule;
   let treasuryModule: TreasuryModule;
-  let timelock: TimelockUpgradeable;
+  let timelock: Timelock;
   let token: VotesTokenWithSupply;
 
   // Wallets
@@ -87,7 +87,7 @@ describe("MetaFactory", () => {
     accessControlImpl = await new DAOAccessControl__factory(deployer).deploy();
     treasuryImpl = await new TreasuryModule__factory(deployer).deploy();
     govImpl = await new GovernorModule__factory(deployer).deploy();
-    timelockImpl = await new TimelockUpgradeable__factory(deployer).deploy();
+    timelockImpl = await new Timelock__factory(deployer).deploy();
 
     const abiCoder = new ethers.utils.AbiCoder();
     const { chainId } = await ethers.provider.getNetwork();
@@ -240,10 +240,7 @@ describe("MetaFactory", () => {
       "GovernorModule",
       predictedGovernorAddress
     );
-    timelock = await ethers.getContractAt(
-      "TimelockUpgradeable",
-      predictedTimelockAddress
-    );
+    timelock = await ethers.getContractAt("Timelock", predictedTimelockAddress);
 
     const createDAOParams = {
       daoImplementation: daoImpl.address,
