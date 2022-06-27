@@ -5,100 +5,35 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/GovernorUpgradeable.sol";
-import "./IGovTimelockUpgradeable.sol";
-import "./ITimelockUpgradeable.sol";
+import "./IGovernorTimelock.sol";
+import "./ITimelock.sol";
 
 /// @dev Extension of {Governor} that binds the execution process to an instance of {TimelockController}. This adds a
 /// delay, enforced by the {TimelockController} to all successful proposal (in addition to the voting duration). The
 /// {Governor} needs to be authorized within the Access Control Contract in order to execute transactions on the TimelockController.
 /// Using this model means the proposal will be operated by the MVD.
-abstract contract GovTimelockUpgradeable is
+abstract contract GovernorTimelock is
     Initializable,
-    IGovTimelockUpgradeable,
+    IGovernorTimelock,
     GovernorUpgradeable
 {
-    ITimelockUpgradeable private _timelock;
+    ITimelock private _timelock;
     mapping(uint256 => bytes32) private _timelockIds;
-
-    /// @dev Emitted when the timelock controller used for proposal execution is modified.
-    event TimelockChange(address oldTimelock, address newTimelock);
 
     /// @dev Set the timelock.
     /// @param timelockAddress Address of the Timelock contract.
-    function __GovTimelock_init(ITimelockUpgradeable timelockAddress)
+    function __GovernorTimelock_init(ITimelock timelockAddress)
         internal
         onlyInitializing
     {
-        __GovTimelock_init_unchained(timelockAddress);
+        __GovernorTimelock_init_unchained(timelockAddress);
     }
 
-    function __GovTimelock_init_unchained(ITimelockUpgradeable timelockAddress)
+    function __GovernorTimelock_init_unchained(ITimelock timelockAddress)
         internal
         onlyInitializing
     {
         _updateTimelock(timelockAddress);
-    }
-
-
-    /// @dev See {IERC165-supportsInterface}.
-    /// @param interfaceId An interface ID bytes4 as defined by ERC-165
-    /// @return bool Indicates whether the interface is supported
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(IERC165Upgradeable, GovernorUpgradeable)
-        returns (bool)
-    {
-        return
-            interfaceId == type(IGovTimelockUpgradeable).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
-
-    /// @dev Overriden version of the {Governor-state} function with added support for the `Queued` status.
-    /// @param proposalId keccak256 hash of proposal params
-    function state(uint256 proposalId)
-        public
-        view
-        virtual
-        override(IGovernorUpgradeable, GovernorUpgradeable)
-        returns (ProposalState)
-    {
-        ProposalState status = super.state(proposalId);
-
-        if (status != ProposalState.Succeeded) {
-            return status;
-        }
-
-        // core tracks execution, so we just have to check if successful proposal have been queued.
-        bytes32 queueid = _timelockIds[proposalId];
-        if (queueid == bytes32(0)) {
-            return status;
-        } else if (_timelock.isOperationDone(queueid)) {
-            return ProposalState.Executed;
-        } else if (_timelock.isOperationPending(queueid)) {
-            return ProposalState.Queued;
-        } else {
-            return ProposalState.Canceled;
-        }
-    }
-
-    /// @dev Public accessor to check the address of the timelock
-    function timelock() public view virtual override returns (address) {
-        return address(_timelock);
-    }
-
-    /// @dev Public accessor to check the eta of a queued proposal
-    /// @param proposalId keccak256 hash of proposal params
-    function proposalEta(uint256 proposalId)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        uint256 eta = _timelock.getTimestamp(_timelockIds[proposalId]);
-        return eta == 1 ? 0 : eta; // _DONE_TIMESTAMP (1) should be replaced with a 0 value
     }
 
     /// @dev Function to queue a proposal to the timelock.
@@ -145,6 +80,54 @@ abstract contract GovTimelockUpgradeable is
 
         return proposalId;
     }
+
+    /// @dev Overriden version of the {Governor-state} function with added support for the `Queued` status.
+    /// @param proposalId keccak256 hash of proposal params
+    function state(uint256 proposalId)
+        public
+        view
+        virtual
+        override(IGovernorTimelock, GovernorUpgradeable)
+        returns (ProposalState)
+    {
+        ProposalState status = super.state(proposalId);
+
+        if (status != ProposalState.Succeeded) {
+            return status;
+        }
+
+        // core tracks execution, so we just have to check if successful proposal have been queued.
+        bytes32 queueid = _timelockIds[proposalId];
+        if (queueid == bytes32(0)) {
+            return status;
+        } else if (_timelock.isOperationDone(queueid)) {
+            return ProposalState.Executed;
+        } else if (_timelock.isOperationPending(queueid)) {
+            return ProposalState.Queued;
+        } else {
+            return ProposalState.Canceled;
+        }
+    }
+
+    /// @dev Public accessor to check the address of the timelock
+    function timelock() public view virtual override returns (address) {
+        return address(_timelock);
+    }
+
+    /// @dev Public accessor to check the eta of a queued proposal
+    /// @param proposalId keccak256 hash of proposal params
+    function proposalEta(uint256 proposalId)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        uint256 eta = _timelock.getTimestamp(_timelockIds[proposalId]);
+        return eta == 1 ? 0 : eta; // _DONE_TIMESTAMP (1) should be replaced with a 0 value
+    }
+
+
 
     /// @dev Overriden execute function that run the already queued proposal through the timelock.
     /// @param targets Contract addresses the DAO will call
@@ -203,7 +186,7 @@ abstract contract GovTimelockUpgradeable is
     /// must be proposed, scheduled, and executed through governance proposals.
     /// CAUTION: It is not recommended to change the timelock while there are other queued governance proposals.
     /// @param newTimelock Address of new Timelock Address
-    function updateTimelock(ITimelockUpgradeable newTimelock)
+    function updateTimelock(ITimelock newTimelock)
         external
         virtual
         onlyGovernance
@@ -211,7 +194,7 @@ abstract contract GovTimelockUpgradeable is
         _updateTimelock(newTimelock);
     }
 
-    function _updateTimelock(ITimelockUpgradeable newTimelock) private {
+    function _updateTimelock(ITimelock newTimelock) private {
         emit TimelockChange(address(_timelock), address(newTimelock));
         _timelock = newTimelock;
     }

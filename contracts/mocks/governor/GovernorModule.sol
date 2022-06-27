@@ -11,17 +11,19 @@ import "./IGovernorModule.sol";
 /// This acts as an extension of the MVD and permissions are controlled by access control.
 /// @dev Gov Module is extended by the timelock contract which creates a lockup period before execution.
 contract GovernorModule is
+    IGovernorModule,
     GovernorSettingsUpgradeable,
     GovernorCountingSimpleUpgradeable,
     GovernorVotesUpgradeable,
     GovernorVotesQuorumFractionUpgradeable,
-    GovTimelockUpgradeable,
+    GovernorTimelock,
     ModuleBase
 {
     /// @dev Configures Gov Module implementation
     /// @dev Called once during deployment atomically
     /// @param _token Voting token uses snapshot feature
     /// @param _timelock Timelock vest proposals to allow detractors to exit system
+    /// @param _initialVoteExtension Allow users to vote if quorum attack is preformed
     /// @param _initialVotingDelay Allow users to research proposals before voting period
     /// @param _initialVotingPeriod Length of voting period (blocks)
     /// @param _initialProposalThreshold Total tokens required to submit a proposal
@@ -29,7 +31,8 @@ contract GovernorModule is
     /// @param _accessControl Address of Access Control
     function initialize(
         IVotesUpgradeable _token,
-        ITimelockUpgradeable _timelock,
+        ITimelock _timelock,
+        uint64 _initialVoteExtension,
         uint256 _initialVotingDelay,
         uint256 _initialVotingPeriod,
         uint256 _initialProposalThreshold,
@@ -45,8 +48,10 @@ contract GovernorModule is
         __GovernorCountingSimple_init();
         __GovernorVotes_init(_token);
         __GovernorVotesQuorumFraction_init(_initialQuorumNumeratorValue);
-        __GovTimelock_init(_timelock);
+        __GovernorTimelock_init(_timelock);
         __initBase(_accessControl, msg.sender, "Governor Module");
+        _registerInterface(type(IGovernorModule).interfaceId);
+        _registerInterface(type(IGovernorTimelock).interfaceId);
     }
 
     // The following functions are overrides required by Solidity.
@@ -57,7 +62,7 @@ contract GovernorModule is
     function votingDelay()
         public
         view
-        override(IGovernorUpgradeable, GovernorSettingsUpgradeable)
+        override(IGovernorUpgradeable, GovernorSettingsUpgradeable, IGovernorModule)
         returns (uint256)
     {
         return super.votingDelay();
@@ -70,7 +75,7 @@ contract GovernorModule is
     function votingPeriod()
         public
         view
-        override(IGovernorUpgradeable, GovernorSettingsUpgradeable)
+        override(IGovernorUpgradeable, GovernorSettingsUpgradeable, IGovernorModule)
         returns (uint256)
     {
         return super.votingPeriod();
@@ -84,7 +89,7 @@ contract GovernorModule is
     function quorum(uint256 blockNumber)
         public
         view
-        override(IGovernorUpgradeable, GovernorVotesQuorumFractionUpgradeable)
+        override(IGovernorUpgradeable, GovernorVotesQuorumFractionUpgradeable, IGovernorModule)
         returns (uint256)
     {
         return super.quorum(blockNumber);
@@ -99,7 +104,7 @@ contract GovernorModule is
     function getVotes(address account, uint256 blockNumber)
         public
         view
-        override(GovernorUpgradeable, IGovernorUpgradeable)
+        override(IGovernorModule, GovernorUpgradeable)
         returns (uint256)
     {
         return super.getVotes(account, blockNumber);
@@ -110,7 +115,7 @@ contract GovernorModule is
     function state(uint256 proposalId)
         public
         view
-        override(GovernorUpgradeable, GovTimelockUpgradeable)
+        override(GovernorUpgradeable, GovernorTimelock, IGovernorModule)
         returns (ProposalState)
     {
         return super.state(proposalId);
@@ -126,7 +131,7 @@ contract GovernorModule is
         virtual
         override(
             GovernorUpgradeable,
-            IGovernorUpgradeable
+            IGovernorModule
         )
         returns (uint256)
     {
@@ -165,7 +170,7 @@ contract GovernorModule is
         string memory description
     )
         public
-        override(GovernorUpgradeable, IGovernorUpgradeable)
+        override(GovernorUpgradeable, IGovernorModule)
         returns (uint256)
     {
         return super.propose(targets, values, calldatas, description);
@@ -175,7 +180,7 @@ contract GovernorModule is
     function proposalThreshold()
         public
         view
-        override(GovernorUpgradeable, GovernorSettingsUpgradeable)
+        override(GovernorUpgradeable, GovernorSettingsUpgradeable, IGovernorModule)
         returns (uint256)
     {
         return super.proposalThreshold();
@@ -193,7 +198,7 @@ contract GovernorModule is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) internal override(GovernorUpgradeable, GovTimelockUpgradeable) {
+    ) internal override(GovernorUpgradeable, GovernorTimelock) {
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 
@@ -210,7 +215,7 @@ contract GovernorModule is
         bytes32 descriptionHash
     )
         internal
-        override(GovernorUpgradeable, GovTimelockUpgradeable)
+        override(GovernorUpgradeable, GovernorTimelock)
         returns (uint256)
     {
         return super._cancel(targets, values, calldatas, descriptionHash);
@@ -220,7 +225,7 @@ contract GovernorModule is
     function _executor()
         internal
         view
-        override(GovernorUpgradeable, GovTimelockUpgradeable)
+        override(GovernorUpgradeable, GovernorTimelock)
         returns (address)
     {
         return super._executor();
@@ -228,7 +233,7 @@ contract GovernorModule is
 
     /// @notice Returns the module name
     /// @return The module name
-    function name() public view override(ModuleBase, GovernorUpgradeable, IGovernorUpgradeable) returns (string memory) {
+    function name() public view override(ModuleBase, GovernorUpgradeable) returns (string memory) {
       return _name;
     }
 
@@ -238,7 +243,7 @@ contract GovernorModule is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(GovernorUpgradeable, GovTimelockUpgradeable, ModuleBase)
+        override(GovernorUpgradeable, ERC165Storage)
         returns (bool)
     {
         return interfaceId == type(IGovernorModule).interfaceId ||

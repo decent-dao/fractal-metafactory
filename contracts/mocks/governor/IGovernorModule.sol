@@ -1,7 +1,8 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorVotesUpgradeable.sol";
-import "./GovTimelockUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/governance/IGovernorUpgradeable.sol";
+import "./GovernorTimelock.sol";
 
 /// @dev Governor Module used to implement 1 token 1 vote.
 /// This acts as an extension of the MVD and permissions are controlled by access control.
@@ -11,6 +12,7 @@ interface IGovernorModule {
     /// @dev Called once during deployment atomically
     /// @param _token Voting token uses snapshot feature
     /// @param _timelock Timelock vest proposals to allow detractors to exit system
+    /// @param _initialVoteExtension Allow users to vote if quorum attack is preformed
     /// @param _initialVotingDelay Allow users to research proposals before voting period
     /// @param _initialVotingPeriod Length of voting period (blocks)
     /// @param _initialProposalThreshold Total tokens required to submit a proposal
@@ -18,7 +20,8 @@ interface IGovernorModule {
     /// @param _accessControl Address of Access Control
     function initialize(
         IVotesUpgradeable _token,
-        ITimelockUpgradeable _timelock,
+        ITimelock _timelock,
+        uint64 _initialVoteExtension,
         uint256 _initialVotingDelay,
         uint256 _initialVotingPeriod,
         uint256 _initialProposalThreshold,
@@ -27,17 +30,6 @@ interface IGovernorModule {
     ) external;
 
     // The following functions are overrides required by Solidity.
-
-    enum ProposalState {
-        Pending,
-        Active,
-        Canceled,
-        Defeated,
-        Succeeded,
-        Queued,
-        Expired,
-        Executed
-    }
 
     /// @notice module:user-config
     /// @dev Delay, in number of block, between the proposal is created and the vote starts. This can be increassed to
@@ -70,7 +62,7 @@ interface IGovernorModule {
 
     /// @dev Overriden version of the {Governor-state} function with added support for the `Queued` status.
     /// @param proposalId keccak256 hash of proposal params
-    function state(uint256 proposalId) external view returns (ProposalState);
+    function state(uint256 proposalId) external view returns (IGovernorUpgradeable.ProposalState);
 
     /// @notice module:core
     /// @dev Block number at which votes close. Votes close at the end of this block, so it is possible to cast a vote
