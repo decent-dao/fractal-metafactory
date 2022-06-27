@@ -19,6 +19,7 @@ contract TreasuryModule is ERC721Holder, ModuleBase, ITreasuryModule {
         address _accessControl
     ) external initializer {
         __initBase(_accessControl, msg.sender, "Treasury Module");
+        _registerInterface(type(ITreasuryModule).interfaceId);
     }
 
   /// @notice Allows the contract to receive Ether
@@ -170,18 +171,4 @@ contract TreasuryModule is ERC721Holder, ModuleBase, ITreasuryModule {
 
     emit ERC721TokensWithdrawn(tokenAddresses, recipients, tokenIds);
   }
-
-    /// @notice Returns whether a given interface ID is supported
-    /// @param interfaceId An interface ID bytes4 as defined by ERC-165
-    /// @return bool Indicates whether the interface is supported
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override
-        returns (bool)
-    {
-        return
-            interfaceId == type(ITreasuryModule).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
 }

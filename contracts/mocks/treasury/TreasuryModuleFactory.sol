@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 
@@ -11,7 +10,6 @@ import "./ITreasuryModule.sol";
 
 /// @notice A factory contract for deploying Treasury Modules
 contract TreasuryModuleFactory is
-    ERC165,
     ModuleFactoryBase,
     ITreasuryModuleFactory
 {
@@ -22,6 +20,7 @@ contract TreasuryModuleFactory is
 
     function initialize() external initializer {
         __initFactoryBase();
+        _registerInterface(type(ITreasuryModuleFactory).interfaceId);
     }
 
     /// @dev Creates a Treasury module
@@ -51,20 +50,5 @@ contract TreasuryModuleFactory is
         emit TreasuryCreated(createdContracts[0], accessControl);
 
         return createdContracts;
-    }
-
-    /// @notice Returns whether a given interface ID is supported
-    /// @param interfaceId An interface ID bytes4 as defined by ERC-165
-    /// @return bool Indicates whether the interface is supported
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC165, ModuleFactoryBase)
-        returns (bool)
-    {
-        return
-            interfaceId == type(IModuleFactory).interfaceId ||
-            super.supportsInterface(interfaceId);
     }
 }
