@@ -283,9 +283,6 @@ describe("MetaFactory", () => {
       ),
     ];
 
-    // const treasuryFactoryCalldata =
-    //   treasuryFactory.interface.encodeFunctionData("create", [treasuryData]);
-
     const tokenFactoryData = [
       abiCoder.encode(["string"], ["DCNT"]),
       abiCoder.encode(["string"], ["DCNT"]),
@@ -296,11 +293,6 @@ describe("MetaFactory", () => {
         [ethers.utils.formatBytes32String("tokenSalt")]
       ),
     ];
-
-    // const tokenFactoryCalldata = tokenFactory.interface.encodeFunctionData(
-    //   "create",
-    //   [tokenFactoryData]
-    // );
 
     const governorFactoryData = [
       abiCoder.encode(["address"], [dao.address]),
@@ -319,11 +311,6 @@ describe("MetaFactory", () => {
         [ethers.utils.formatBytes32String("governorSalt")]
       ),
     ];
-
-    // const governorFactoryCalldata = govFactory.interface.encodeFunctionData(
-    //   "create",
-    //   [governorFactoryData]
-    // );
 
     const innerAddActionsRolesCalldata =
       accessControl.interface.encodeFunctionData("daoAddActionsRoles", [
