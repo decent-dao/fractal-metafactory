@@ -24,9 +24,10 @@ contract TreasuryModuleFactory is
     }
 
     /// @dev Creates a Treasury module
+    /// @param creator The address creating the module
     /// @param data The array of bytes used to create the module
     /// @return address[] The array of addresses of the created module
-    function create(bytes[] calldata data)
+    function create(address creator, bytes[] calldata data)
         external
         override
         returns (address[] memory)
@@ -39,7 +40,7 @@ contract TreasuryModuleFactory is
 
         createdContracts[0] = Create2.deploy(
             0,
-            keccak256(abi.encodePacked(tx.origin, block.chainid, salt)),
+            keccak256(abi.encodePacked(creator, msg.sender, block.chainid, salt)),
             abi.encodePacked(
                 type(ERC1967Proxy).creationCode,
                 abi.encode(treasuryImplementation, "")

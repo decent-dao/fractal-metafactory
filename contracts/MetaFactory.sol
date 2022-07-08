@@ -9,27 +9,33 @@ import "@openzeppelin/contracts/utils/Address.sol";
 
 import "./interfaces/IMetaFactory.sol";
 import "@fractal-framework/core-contracts/contracts/interfaces/IDAO.sol";
+import "@fractal-framework/core-contracts/contracts/interfaces/IModuleFactoryBase.sol";
 
 /// @notice A factory contract for deploying DAOs along with any desired modules within one transaction
 /// @dev For the Metafactory to be able to call the execute function on the created DAO, it needs to be given
 /// @dev a role that has permissions to call this function. It is critical to have the MetaFactory then revoke
-/// @dev this role within the same transaction, so that the MetaFactory cannot be used to perform arbitrary 
+/// @dev this role within the same transaction, so that the MetaFactory cannot be used to perform arbitrary
 /// @dev execution calls on the DAO in the future.
 contract MetaFactory is IMetaFactory, ERC165 {
   /// @notice Creates a DAO, Access Control, and any modules specified
   /// @param daoFactory The address of the DAO factory
   /// @param createDAOParams The struct of parameters used for creating the DAO and Access Control contracts
+  /// @param moduleFactories Array of addresses of the module factories to call
+  /// @param moduleFactoriesBytes Array of array of bytes to pass to module factory calls
   /// @param targets An array of addresses to target for the function calls
   /// @param values An array of ether values to send with the function calls
   /// @param calldatas An array of bytes defining the function calls
   function createDAOAndExecute(
     address daoFactory,
     IDAOFactory.CreateDAOParams memory createDAOParams,
+    address[] calldata moduleFactories,
+    bytes[][] calldata moduleFactoriesBytes,
     address[] calldata targets,
     uint256[] calldata values,
     bytes[] calldata calldatas
   ) external {
     createDAO(daoFactory, createDAOParams);
+    createModules(moduleFactories, moduleFactoriesBytes);
     execute(targets, values, calldatas);
   }
 
@@ -46,6 +52,18 @@ contract MetaFactory is IMetaFactory, ERC165 {
     );
 
     emit DAOCreated(dao, accessControl, msg.sender);
+  }
+
+  function createModules(
+    address[] calldata moduleFactories,
+    bytes[][] calldata moduleFactoriesBytes
+  ) internal {
+    if (moduleFactories.length != moduleFactoriesBytes.length)
+      revert UnequalArrayLengths();
+
+    for (uint256 i; i < moduleFactories.length; i++) {
+      IModuleFactoryBase(moduleFactories[i]).create(msg.sender, moduleFactoriesBytes[i]);
+    }
   }
 
   /// @notice A function for executing function calls to deploy an MVD, modules, and initialize them
