@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts-upgradeable/governance/utils/IVotesUpgradeable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
 import "./interfaces/IMetaFactory.sol";
 import "@fractal-framework/core-contracts/contracts/interfaces/IDAO.sol";
